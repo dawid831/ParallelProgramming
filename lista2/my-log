@@ -1,0 +1,52 @@
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2$ # Dawid Nowak 268450
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2$ svn export https://repo.cs.pwr.edu.pl/268450-dir/mk1/PW_LATO_2024-2025/lista2/ exported
+A    exported
+A    exported/random_seeds.adb
+A    exported/random_seeds.ads
+A    exported/random_seeds.ali
+A    exported/zadanie1.adb
+A    exported/zadanie2.go
+A    exported/zadanie3.adb
+A    exported/zadanie4.go
+Exported revision 44.
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2$ cd exported/
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ls
+random_seeds.adb  random_seeds.ads  random_seeds.ali  zadanie1.adb  zadanie2.go  zadanie3.adb  zadanie4.go
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ gnat make *.adb                                                                                                 
+x86_64-linux-gnu-gcc-13 -c random_seeds.adb
+x86_64-linux-gnu-gcc-13 -c zadanie1.adb
+zadanie1.adb:213:25: warning: potentially blocking operation in protected operation [enabled by default]
+x86_64-linux-gnu-gnatbind-13 -x zadanie1.ali
+x86_64-linux-gnu-gnatlink-13 zadanie1.ali
+x86_64-linux-gnu-gcc-13 -c zadanie3.adb
+zadanie3.adb:233:25: warning: potentially blocking operation in protected operation [enabled by default]
+zadanie3.adb:240:31: warning: potentially blocking operation in protected operation [enabled by default]
+x86_64-linux-gnu-gnatbind-13 -x zadanie3.ali
+x86_64-linux-gnu-gnatlink-13 zadanie3.ali
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie1 > zadanie1_1
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie1 > zadanie1_2
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie1 > zadanie1_3
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie3 > zadanie3_1                                                                                         
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie3 > zadanie3_2
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ ./zadanie3 > zadanie3_3
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie2.go > zadanie2_1
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie2.go > zadanie2_2
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie2.go > zadanie2_3
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie4.go > zadanie4_1                                                                                 
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie4.go > zadanie4_2
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ go run zadanie4.go > zadanie4_3
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ shasum zadanie*_*
+946517b296d900eb99887dc863a47f90a7314312  zadanie1_1
+29f2e9a84bb549c9169f948e8f7f6f81afd5f2be  zadanie1_2
+5026ef14b2dfc24de9abecc943c7c7d7aa92828c  zadanie1_3
+94315e74da76332564f5fc0d69c5840516e7d113  zadanie2_1
+7f4a91204d536aff9d303f33cab0b28439880406  zadanie2_2
+3ddc5eaf3412684f7c1742ac759b38d04c2b785c  zadanie2_3
+9c804027b3cc747ae8d4ea889c4f59e178cc1afd  zadanie3_1
+c1e5e12cc5cb86df840c275c6826aeb3f6d0d51b  zadanie3_2
+c46f291f8d6b5f9897d811423e400cd02ddd4d95  zadanie3_3
+1884ec08badcc885cc91fc4e80c3b5665517efa1  zadanie4_1
+b0c29ee1006553b62185d6b61396358703804fbd  zadanie4_2
+db8871a17f328d852b6bac49041fa2f72c899e0a  zadanie4_3
+dawid@dawid-VirtualBox:~/Desktop/mk1/PW_LATO_2024-2025/lista2/exported$ tmux capture-pane -p -S'-' -E'-' -J > my-log         
+

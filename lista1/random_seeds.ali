@@ -1,0 +1,59 @@
+V "GNAT Lib v10"
+P SS ZX
+
+RN
+RV NO_FLOATING_POINT
+RV NO_SECONDARY_STACK
+RV NO_DEFAULT_INITIALIZATION
+RV NO_DYNAMIC_SIZED_OBJECTS
+RV SPARK_05
+
+U random_seeds%b	random_seeds.adb	51047bef NE OO PK
+W ada%s			ada.ads			ada.ali
+W ada.numerics%s	a-numeri.ads		a-numeri.ali
+W ada.numerics.float_random%s  a-nuflra.adb	a-nuflra.ali
+Z system.secondary_stack%s  s-secsta.adb	s-secsta.ali
+
+U random_seeds%s	random_seeds.ads	5ae9d88c EE NE OO PK
+W ada%s			ada.ads			ada.ali
+W ada.numerics%s	a-numeri.ads		a-numeri.ali
+W ada.numerics.float_random%s  a-nuflra.adb	a-nuflra.ali
+
+D ada.ads		20230707070819 76789da1 ada%s
+D a-numeri.ads		20230707070819 bb51c45a ada.numerics%s
+D a-nuflra.ads		20230707070819 4056ab7a ada.numerics.float_random%s
+D a-unccon.ads		20230707070819 0e9b276f ada.unchecked_conversion%s
+D interfac.ads		20230707070819 5ab55268 interfaces%s
+D random_seeds.ads	20250309133753 1abf73f6 random_seeds%s
+D random_seeds.adb	20250309133753 0beda363 random_seeds%b
+D system.ads		20230707070819 4635ec04 system%s
+D s-exctab.ads		20230707070819 54135002 system.exception_table%s
+D s-parame.ads		20230707070819 48ec542b system.parameters%s
+D s-rannum.ads		20230707070819 99ade2f2 system.random_numbers%s
+D s-secsta.ads		20230707070819 20bbe636 system.secondary_stack%s
+D s-stalib.ads		20230707070819 09bd3940 system.standard_library%s
+D s-stoele.ads		20230707070819 2dc34a04 system.storage_elements%s
+G a e
+G c Z s b [make_seeds random_seeds 6 13 none]
+G c Z s s [seed_array_typeIP random_seeds 5 9 none]
+X 1 ada.ads
+16K9*Ada 20e8 6|1r6 1r37 7|1r6 1r37
+X 2 a-numeri.ads
+16K13*Numerics 32e17 6|1r10 1r41 7|1r10 1r41
+X 3 a-nuflra.ads
+41K22*Float_Random 74e30 6|1w19 1r50 7|1w19 1r50
+47R9*Generator<11|63R9> 7|6r12
+49F12*Uniformly_Distributed{float}
+51V13*Random{49F12}<11|71p13> 7|11s49
+53U14*Reset<11|100p14> 7|9s7
+X 6 random_seeds.ads
+3K9*Random_Seeds 7l5 7e17 7|3b14 15l5 15t17
+4f4*Seed_Range{float} 7|11r36
+5A9*Seed_Array_Type(integer)<integer> 6r48 7|5r48 7r21
+6V13*Make_Seeds{5A9} 6>24 7|5b13 14t7
+6i24 Size{positive} 7|5b24 7r42
+X 7 random_seeds.adb
+6r7 GG{3|47R9} 9r13 11r56
+7a7 Seed_Array{6|5A9} 10r16 11m10 13r14
+10i11 I{integer} 11r21
+
