@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func (s ProcessState) String() string {
 
 type MaxTicket struct {
 	mu    sync.Mutex
-	value int
+	value int32
 }
 
 func (mt *MaxTicket) Lock() {
@@ -41,13 +42,13 @@ func (mt *MaxTicket) Unlock() {
 	mt.mu.Unlock()
 }
 
-func (mt *MaxTicket) Read() int {
+func (mt *MaxTicket) Read() int32 {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
 	return mt.value
 }
 
-func (mt *MaxTicket) TryValue(newValue int) {
+func (mt *MaxTicket) TryValue(newValue int32) {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
 	if newValue > mt.value {
@@ -60,9 +61,7 @@ type Process struct {
 	Symbol       rune
 	State        ProcessState
 	Steps        int
-	MyMaxTicket  int
-	choosing     []int
-	number       []int
+	MyMaxTicket  int32
 	random       *rand.Rand
 	stateChanges []Trace
 	startTime    time.Time
@@ -76,6 +75,9 @@ type Trace struct {
 }
 
 var (
+	choosing []int32
+	number   []int32
+
 	biggestTicket MaxTicket
 	wg            sync.WaitGroup
 	printerWG     sync.WaitGroup
@@ -87,8 +89,8 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// Shared arrays
-	choosing := make([]int, NrOfProcesses)
-	number := make([]int, NrOfProcesses)
+	choosing = make([]int32, NrOfProcesses)
+	number = make([]int32, NrOfProcesses)
 
 	// Create processes
 	processes := make([]*Process, NrOfProcesses)
@@ -96,8 +98,6 @@ func main() {
 		p := &Process{
 			ID:        i,
 			Symbol:    rune('A' + i),
-			choosing:  choosing,
-			number:    number,
 			random:    rand.New(rand.NewSource(time.Now().UnixNano() + int64(i))),
 			startTime: time.Now(),
 		}
@@ -124,6 +124,7 @@ func main() {
 
 func (p *Process) Run() {
 	defer wg.Done()
+	id := p.ID
 
 	for step := 0; step < p.Steps/4; step++ {
 		// Local Section
@@ -133,12 +134,13 @@ func (p *Process) Run() {
 		// Entry Protocol (Bakery algorithm)
 		p.recordState(EntryProtocol)
 
-		p.choosing[p.ID] = 1
-		p.number[p.ID] = 1 + p.findMax()
-		p.choosing[p.ID] = 0
+		atomic.StoreInt32(&choosing[id], 1)
+		max := findMax()
+		atomic.StoreInt32(&number[id], int32(max+1))
+		atomic.StoreInt32(&choosing[id], 0)
 
-		if p.number[p.ID] > p.MyMaxTicket {
-			p.MyMaxTicket = p.number[p.ID]
+		if atomic.LoadInt32(&number[id]) > p.MyMaxTicket {
+			p.MyMaxTicket = atomic.LoadInt32(&number[id])
 		}
 
 		for j := 0; j < NrOfProcesses; j++ {
@@ -146,14 +148,14 @@ func (p *Process) Run() {
 				continue
 			}
 
-			for p.choosing[j] == 1 {
-				// busy wait
+			for atomic.LoadInt32(&choosing[j]) == 1 {
+				time.Sleep(MinDelayMs / 10 * time.Millisecond)
 			}
 
-			for p.number[j] != 0 &&
-				(p.number[p.ID] > p.number[j] ||
-					(p.number[p.ID] == p.number[j] && p.ID > j)) {
-				// busy wait
+			for atomic.LoadInt32(&number[j]) != 0 &&
+				(atomic.LoadInt32(&number[id]) > atomic.LoadInt32(&number[j]) ||
+					(atomic.LoadInt32(&number[id]) == atomic.LoadInt32(&number[j]) && id > j)) {
+				time.Sleep(MinDelayMs / 10 * time.Millisecond)
 			}
 		}
 
@@ -163,18 +165,18 @@ func (p *Process) Run() {
 
 		// Exit Protocol
 		p.recordState(ExitProtocol)
-		p.number[p.ID] = 0
+		atomic.StoreInt32(&number[id], 0)
 	}
 
 	// Update global max ticket
 	biggestTicket.TryValue(p.MyMaxTicket)
 }
 
-func (p *Process) findMax() int {
-	max := 0
-	for _, num := range p.number {
-		if num > max {
-			max = num
+func findMax() int32 {
+	max := int32(0)
+	for i := 0; i < NrOfProcesses; i++ {
+		if n := atomic.LoadInt32(&number[i]); n > max {
+			max = n
 		}
 	}
 	return max
@@ -186,8 +188,9 @@ func (p *Process) randomDelay() {
 }
 
 func (p *Process) recordState(state ProcessState) {
+	stamp := time.Since(p.startTime)
 	p.stateChanges = append(p.stateChanges, Trace{
-		Timestamp: time.Since(p.startTime),
+		Timestamp: stamp,
 		ID:        p.ID,
 		State:     state,
 		Symbol:    p.Symbol,
