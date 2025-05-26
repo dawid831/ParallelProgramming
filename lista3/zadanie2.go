@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -64,7 +65,6 @@ type Process struct {
 	MyMaxTicket  int32
 	random       *rand.Rand
 	stateChanges []Trace
-	startTime    time.Time
 }
 
 type Trace struct {
@@ -75,8 +75,9 @@ type Trace struct {
 }
 
 var (
-	choosing []int32
-	number   []int32
+	choosing  []int32
+	number    []int32
+	startTime time.Time
 
 	biggestTicket MaxTicket
 	wg            sync.WaitGroup
@@ -91,15 +92,15 @@ func main() {
 	// Shared arrays
 	choosing = make([]int32, NrOfProcesses)
 	number = make([]int32, NrOfProcesses)
+	startTime = time.Now()
 
 	// Create processes
 	processes := make([]*Process, NrOfProcesses)
 	for i := 0; i < NrOfProcesses; i++ {
 		p := &Process{
-			ID:        i,
-			Symbol:    rune('A' + i),
-			random:    rand.New(rand.NewSource(time.Now().UnixNano() + int64(i))),
-			startTime: time.Now(),
+			ID:     i,
+			Symbol: rune('A' + i),
+			random: rand.New(rand.NewSource(time.Now().UnixNano() + int64(i))),
 		}
 		p.Steps = MinSteps + p.random.Intn(MaxSteps-MinSteps+1)
 		processes[i] = p
@@ -131,16 +132,16 @@ func (p *Process) Run() {
 		p.recordState(LocalSection)
 		p.randomDelay()
 
-		// Entry Protocol (Bakery algorithm)
+		// Entry Protocol
 		p.recordState(EntryProtocol)
 
 		atomic.StoreInt32(&choosing[id], 1)
-		max := findMax()
-		atomic.StoreInt32(&number[id], int32(max+1))
+		max := findMax() + 1
+		atomic.StoreInt32(&number[id], max)
 		atomic.StoreInt32(&choosing[id], 0)
 
-		if atomic.LoadInt32(&number[id]) > p.MyMaxTicket {
-			p.MyMaxTicket = atomic.LoadInt32(&number[id])
+		if number[id] > p.MyMaxTicket {
+			p.MyMaxTicket = number[id]
 		}
 
 		for j := 0; j < NrOfProcesses; j++ {
@@ -149,20 +150,19 @@ func (p *Process) Run() {
 			}
 
 			for atomic.LoadInt32(&choosing[j]) == 1 {
-				time.Sleep(MinDelayMs / 10 * time.Millisecond)
+				runtime.Gosched()
 			}
 
 			for atomic.LoadInt32(&number[j]) != 0 &&
 				(atomic.LoadInt32(&number[id]) > atomic.LoadInt32(&number[j]) ||
 					(atomic.LoadInt32(&number[id]) == atomic.LoadInt32(&number[j]) && id > j)) {
-				time.Sleep(MinDelayMs / 10 * time.Millisecond)
+				runtime.Gosched()
 			}
 		}
 
 		// Critical Section
 		p.recordState(CriticalSection)
 		p.randomDelay()
-
 		// Exit Protocol
 		p.recordState(ExitProtocol)
 		atomic.StoreInt32(&number[id], 0)
@@ -188,7 +188,7 @@ func (p *Process) randomDelay() {
 }
 
 func (p *Process) recordState(state ProcessState) {
-	stamp := time.Since(p.startTime)
+	stamp := time.Since(startTime)
 	p.stateChanges = append(p.stateChanges, Trace{
 		Timestamp: stamp,
 		ID:        p.ID,
