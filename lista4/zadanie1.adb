@@ -3,8 +3,7 @@ with Ada.Numerics.Float_Random; use Ada.Numerics.Float_Random;
 with Random_Seeds; use Random_Seeds;
 with Ada.Real_Time; use Ada.Real_Time;
 
-procedure  Mutex_Template is
-
+procedure zadanie1 is
 
 -- Processes 
 
@@ -15,12 +14,14 @@ procedure  Mutex_Template is
 
   Min_Delay : constant Duration := 0.01;
   Max_Delay : constant Duration := 0.05;
-
 -- States of a Process 
 
   type Process_State is (
     Local_Section,
-    Entry_Protocol,
+    Entry_Protocol_1,
+    Entry_Protocol_2,
+    Entry_Protocol_3,
+    Entry_Protocol_4,
     Critical_Section,
     Exit_Protocol
     );
@@ -39,6 +40,9 @@ procedure  Mutex_Template is
   Seeds : Seed_Array_Type( 1..Nr_Of_Processes ) := Make_Seeds( Nr_Of_Processes );
 
 -- Types, procedures and functions
+
+    Flags: array (Integer range 0..Nr_Of_Processes - 1) of Integer range 0..4 := (others => 0);
+    pragma Volatile(Flags);
 
   -- Postitions on the board
   type Position_Type is record	
@@ -111,7 +115,6 @@ procedure  Mutex_Template is
     for I in Process_State'Range loop
       Put( I'Image &";" );
     end loop;
-    Put_Line("EXTRA_LABEL;"); -- Place labels with extra info here (e.g. "MAX_TICKET=...;" for Backery). 
 
   end Printer;
 
@@ -120,7 +123,7 @@ procedure  Mutex_Template is
   type Process_Type is record
     Id: Integer;
     Symbol: Character;
-    Position: Position_Type;    
+    Position: Position_Type;
   end record;
 
 
@@ -135,6 +138,10 @@ procedure  Mutex_Template is
     Time_Stamp : Duration;
     Nr_of_Steps: Integer;
     Traces: Traces_Sequence_Type; 
+    
+    I : Integer;
+    Success : Boolean;
+    My_Max_Ticket : Integer := 0;
 
     procedure Store_Trace is
     begin  
@@ -154,7 +161,6 @@ procedure  Mutex_Template is
       Store_Trace;
     end;
     
-
   begin
     accept Init(Id: Integer; Seed: Integer; Symbol: Character) do
       Reset(G, Seed); 
@@ -177,14 +183,61 @@ procedure  Mutex_Template is
       null;
     end Start;
 
+    I := Process.Id;
 --    for Step in 0 .. Nr_of_Steps loop
-    for Step in 0 .. Nr_of_Steps/4 - 1  loop  -- TEST !!!
+    for Step in 0 .. Nr_of_Steps/7 - 1  loop  -- TEST !!!
       -- LOCAL_SECTION - start
       delay Min_Delay+(Max_Delay-Min_Delay)*Duration(Random(G));
       -- LOCAL_SECTION - end
+      Flags(I) := 1;
+      Change_State( Entry_Protocol_1 ); -- starting ENTRY_PROTOCOL
+      loop
+        Success := True;
+        for J in 0..Nr_Of_Processes-1 loop
+          if Flags(J) > 2 then
+              Success := False;
+          end if;
+        end loop;
+        exit when Success;
+      end loop;
 
-      Change_State( ENTRY_PROTOCOL ); -- starting ENTRY_PROTOCOL
-      -- implement the ENTRY_PROTOCOL here ...
+      Flags(I) := 3;
+      Change_State ( Entry_Protocol_3 );
+      Success := False;
+      for J in 0..Nr_Of_Processes-1 loop
+        if Flags(J) = 1 then
+            Success := True;
+        end if;
+      end loop;
+
+      if Success then
+        Flags(I) := 2;
+        Change_State ( Entry_Protocol_2 );
+
+        loop
+          Success := False;
+          for J in 0..Nr_Of_Processes-1 loop
+            if Flags(J) = 4 then
+                Success := True;
+            end if;
+          end loop;
+          exit when Success;
+        end loop;
+      end if;
+
+      Flags(I) := 4;
+      Change_State ( Entry_Protocol_4 );
+
+      loop
+        Success := True;
+        for J in 0..I-1 loop
+          if Flags(J) > 1 then
+              Success := False;
+          end if;
+        end loop;
+        exit when Success;
+      end loop;
+
       Change_State( CRITICAL_SECTION ); -- starting CRITICAL_SECTION
 
       -- CRITICAL_SECTION - start
@@ -192,8 +245,17 @@ procedure  Mutex_Template is
       -- CRITICAL_SECTION - end
 
       Change_State( EXIT_PROTOCOL ); -- starting EXIT_PROTOCOL
-      -- implement the EXIT_PROTOCOL here ...
-      Change_State( LOCAL_SECTION ); -- starting LOCAL_SECTION      
+      loop
+        Success := True;
+          for J in I+1..Nr_Of_Processes-1 loop
+            if Flags(J) = 2 or Flags(J) = 3 then
+                Success := False;
+            end if;
+          end loop;
+        exit when Success;
+      end loop;
+      Flags(I) := 0;
+      Change_State( LOCAL_SECTION ); -- starting LOCAL_SECTION    
     end loop;
     
     Printer.Report( Traces );
@@ -217,5 +279,5 @@ begin
     Process_Tasks(I).Start;
   end loop;
 
-end Mutex_Template;
+end zadanie1;
 
